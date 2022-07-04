@@ -69,6 +69,10 @@ protected:
 	// End of APawn interface
 	void StartWithKindofWeapon();
 	void LoadWeapon(EWeaponType WeaponType);
+
+	void AccelerateWalk();
+	void NormalWalk();
+
 	virtual void BeginPlay() override;
 
 public:
@@ -76,4 +80,16 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+public:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerAccelerateWalk();
+	void ServerAccelerateWalk_Implementation();
+	bool ServerAccelerateWalk_Validate();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerNormalWalk();
+	void ServerNormalWalk_Implementation();
+	bool ServerNormalWalk_Validate();
+
 };

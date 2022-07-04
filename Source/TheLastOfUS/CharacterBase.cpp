@@ -47,8 +47,9 @@ ACharacterBase::ACharacterBase()
 void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
-	//this->StartWithKindofWeapon();
+	this->StartWithKindofWeapon();
 }
+
 
 void ACharacterBase::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
@@ -56,7 +57,8 @@ void ACharacterBase::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	check(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
-
+	PlayerInputComponent->BindAction("Accelerate", IE_Pressed,this, &ACharacterBase::AccelerateWalk);
+	PlayerInputComponent->BindAction("Accelerate", IE_Released,this, &ACharacterBase::NormalWalk);
 	// PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ACharacterBase::InputFirePressed);
 	// PlayerInputComponent->BindAction("Fire", IE_Released, this, &ACharacterBase::InputFireReleased);
 	
@@ -70,10 +72,23 @@ void ACharacterBase::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAxis("TurnRate", this, &ACharacterBase::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ACharacterBase::LookUpAtRate);
-
+	
 }
 
 
+void ACharacterBase::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
+{
+	Jump();
+}
+
+void ACharacterBase::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
+{
+	StopJumping();
+}
+
+
+
+#pragma region Weapon
 void ACharacterBase::EquipWeapon(AWeaponBase* weapon)
 {
 	if (this->OwnWeapon) {
@@ -92,24 +107,6 @@ void ACharacterBase::EquipWeapon(AWeaponBase* weapon)
 
 }
 
-void ACharacterBase::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
-{
-	Jump();
-}
-
-void ACharacterBase::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
-{
-	StopJumping();
-}
-
-void ACharacterBase::StartWithKindofWeapon()
-{
-	if (HasAuthority())
-	{
-		LoadWeapon(EWeaponType::AK47);
-	}
-}
-
 void ACharacterBase::LoadWeapon(EWeaponType WeaponType)
 {
 	FActorSpawnParameters SpawnInfo;
@@ -126,10 +123,57 @@ void ACharacterBase::LoadWeapon(EWeaponType WeaponType)
 		break;
 	}
 	case EWeaponType::M4A1:
+	{
+		UClass* BlueprintVar = StaticLoadClass(AWeaponBase::StaticClass(), nullptr, TEXT("Blueprint'/Game/Blueprint/Weapon/M4A1.M4A1_C'"));
+		AWeaponBase* weapon = GetWorld()->SpawnActor<AWeaponBase>(BlueprintVar, GetActorTransform(), SpawnInfo);
+		EquipWeapon(weapon);
 		break;
+	}
 	default:
 		break;
 	}
+}
+
+void ACharacterBase::StartWithKindofWeapon()
+{
+	if (HasAuthority())
+	{
+		LoadWeapon(EWeaponType::M4A1);
+	}
+}
+#pragma endregion Weapon
+
+#pragma region MovementRPC
+void ACharacterBase::ServerAccelerateWalk_Implementation()
+{
+	CharacterMovement->MaxWalkSpeed = 600;
+}
+
+bool ACharacterBase::ServerAccelerateWalk_Validate()
+{
+	return true;
+}
+
+void ACharacterBase::ServerNormalWalk_Implementation()
+{
+	CharacterMovement->MaxWalkSpeed = 400;
+}
+
+bool ACharacterBase::ServerNormalWalk_Validate()
+{
+	return true;
+}
+
+void ACharacterBase::AccelerateWalk()
+{
+	CharacterMovement->MaxWalkSpeed = 600;
+	ServerAccelerateWalk();
+}
+
+void ACharacterBase::NormalWalk()
+{
+	CharacterMovement->MaxWalkSpeed = 400;
+	ServerNormalWalk();
 }
 
 
@@ -173,3 +217,4 @@ void ACharacterBase::MoveRight(float Value)
 		AddMovementInput(Direction, Value);
 	}
 }
+#pragma endregion MovementRPC
