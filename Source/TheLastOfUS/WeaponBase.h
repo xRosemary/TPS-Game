@@ -26,14 +26,25 @@ public:
 	UPROPERTY(EditAnywhere)
 	EWeaponType WeaponKind;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USkeletalMeshComponent* WeaponMesh;
 
 	UPROPERTY(EditAnywhere)
 	USphereComponent* SphereCollision;
 
+	UPROPERTY(EditAnywhere)
+	UAnimMontage* FireAnimMontage;
+
 	UFUNCTION()
 	void OnOtherBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+public:
+	UFUNCTION(BlueprintImplementableEvent, Category="GunAnimation")
+	void PlayFireAnimation();
+
+	void StopFire();
+
+	
 
 protected:
 	virtual void BeginPlay() override;

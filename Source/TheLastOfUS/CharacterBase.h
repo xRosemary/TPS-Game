@@ -19,6 +19,10 @@ class THELASTOFUS_API ACharacterBase : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
+	
+	UPROPERTY(EditAnywhere)
+	UAnimInstance* AnimBP;
+
 public:
 	ACharacterBase();
 
@@ -36,7 +40,7 @@ protected:
 	UPROPERTY(meta = (AllowPrivateAccess = "true"))
 	AWeaponBase* OwnWeapon;
 
-
+#pragma region KeyInput
 protected:
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
@@ -62,6 +66,18 @@ protected:
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
 
+	void FirePressed();
+	void FireReleased();
+#pragma endregion
+
+
+#pragma region Fire
+protected:
+	EWeaponType weaponType;
+	void FireStart();
+	void FireStop();
+#pragma endregion
+
 
 protected:
 	// APawn interface
@@ -81,6 +97,7 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
+#pragma region NetWork
 public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerAccelerateWalk();
@@ -92,4 +109,8 @@ public:
 	void ServerNormalWalk_Implementation();
 	bool ServerNormalWalk_Validate();
 
+	UFUNCTION(Server, Reliable)
+	void ClientFire();
+	void ClientFire_Implementation();
+#pragma endregion
 };

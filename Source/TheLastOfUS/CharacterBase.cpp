@@ -48,6 +48,7 @@ void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 	this->StartWithKindofWeapon();
+	AnimBP = Mesh->GetAnimInstance();
 }
 
 
@@ -59,8 +60,8 @@ void ACharacterBase::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	PlayerInputComponent->BindAction("Accelerate", IE_Pressed,this, &ACharacterBase::AccelerateWalk);
 	PlayerInputComponent->BindAction("Accelerate", IE_Released,this, &ACharacterBase::NormalWalk);
-	// PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ACharacterBase::InputFirePressed);
-	// PlayerInputComponent->BindAction("Fire", IE_Released, this, &ACharacterBase::InputFireReleased);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ACharacterBase::FirePressed);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ACharacterBase::FireReleased);
 	
 	PlayerInputComponent->BindAxis("MoveForward", this, &ACharacterBase::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ACharacterBase::MoveRight);
@@ -72,20 +73,58 @@ void ACharacterBase::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAxis("TurnRate", this, &ACharacterBase::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ACharacterBase::LookUpAtRate);
-	
 }
 
 
-void ACharacterBase::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
+#pragma region Fire
+void ACharacterBase::FirePressed()
 {
-	Jump();
+	switch (weaponType)
+	{
+	case EWeaponType::AK47:
+	{
+		FireStart();
+		break;
+	}
+	case EWeaponType::M4A1:
+	{
+		FireStart();
+		break;
+	}
+	default:
+		break;
+	}
 }
 
-void ACharacterBase::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
+void ACharacterBase::FireReleased()
 {
-	StopJumping();
+	switch (weaponType)
+	{
+	case EWeaponType::AK47:
+	{
+		FireStop();
+		break;
+	}
+	case EWeaponType::M4A1:
+	{
+		FireStop();
+		break;
+	}
+	default:
+		break;
+	}
 }
 
+void ACharacterBase::FireStart()
+{
+	ClientFire();
+}
+
+void ACharacterBase::FireStop()
+{
+}
+
+#pragma endregion
 
 
 #pragma region Weapon
@@ -139,9 +178,10 @@ void ACharacterBase::StartWithKindofWeapon()
 	if (HasAuthority())
 	{
 		LoadWeapon(EWeaponType::M4A1);
+		this->weaponType = EWeaponType::M4A1;
 	}
 }
-#pragma endregion Weapon
+#pragma endregion
 
 #pragma region MovementRPC
 void ACharacterBase::ServerAccelerateWalk_Implementation()
@@ -162,6 +202,20 @@ void ACharacterBase::ServerNormalWalk_Implementation()
 bool ACharacterBase::ServerNormalWalk_Validate()
 {
 	return true;
+}
+
+void ACharacterBase::ClientFire_Implementation()
+{
+	if (OwnWeapon)
+	{
+		OwnWeapon->PlayFireAnimation();
+	}
+	UAnimMontage* FireMontage = OwnWeapon->FireAnimMontage;
+	if (FireMontage) {
+		UE_LOG(LogTemp, Warning, TEXT("123"));
+	}
+	AnimBP->Montage_SetPlayRate(FireMontage, 1);
+	AnimBP->Montage_Play(FireMontage);
 }
 
 void ACharacterBase::AccelerateWalk()
@@ -217,4 +271,15 @@ void ACharacterBase::MoveRight(float Value)
 		AddMovementInput(Direction, Value);
 	}
 }
-#pragma endregion MovementRPC
+
+void ACharacterBase::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
+{
+	Jump();
+}
+
+void ACharacterBase::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
+{
+	StopJumping();
+}
+
+#pragma endregion
